@@ -1,0 +1,92 @@
+import numpy as np
+import pandas as pd
+# Question 1
+def generate_car_matrix(data_set):
+    df = pd.read_csv(data_set)
+    car_matrix = pd.pivot_table(df, values='car', index='id_1', columns='id_2', fill_value=0)
+    car_matrix.values[[range(car_matrix.shape[0])]*2]
+    return car_matrix
+
+# Question 2
+def get_type_count(data_set):
+    df = pd.read_csv(data_set)
+    df['car_type'] = pd.cut(df['car'], bins=[float('-inf'), 15, 25, float('inf')], labels=['low', 'medium', 'high'])
+    type_count = df['car_type'].value_counts().to_dict()
+    type_count = dict(sorted(type_count.items()))
+    return type_count
+
+# Question 3
+def get_bus_indexes(data_set):
+    df = pd.read_csv(data_set)
+    mean_bus = df['bus'].mean()
+    bus_indexes = df[df['bus'] > 2 * mean_bus].index.sort_values().tolist()
+    return bus_indexes
+
+# Question 4
+def filter_routes(data_set):
+    df = pd.read_csv(data_set)
+    avg_truck_by_route = df.groupby('route')['truck'].mean()
+    filtered_routes = avg_truck_by_route[avg_truck_by_route > 7].index.tolist()
+    return sorted(filtered_routes)
+
+# Question 5
+def multiply_matrix(data_set):
+    df = pd.read_csv(data_set)
+    car_matrix = generate_car_matrix(data_set)
+    
+    def modify_value(x):
+        return x * 0.75 if x > 20 else x * 1.25
+    
+    vectorized_modify = np.vectorize(modify_value)
+    modified_matrix = pd.DataFrame(vectorized_modify(car_matrix.values), columns=car_matrix.columns, index=car_matrix.index)
+    
+    return modified_matrix.round(1)
+
+
+# Question 6
+def check_timestamp_completeness(data_set):
+    df = pd.read_csv(data_set)
+
+    
+    required_columns = ['id', 'id_2', 'startDay', 'startTime', 'endDay', 'endTime']
+    missing_columns = set(required_columns) - set(df.columns)
+
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+
+    df['start_timestamp'] = pd.to_datetime(
+        df['startDay'] + ' ' + df['startTime'],
+        format='%A %H:%M:%S'
+    )
+    df['end_timestamp'] = pd.to_datetime(df['endDay'] + ' ' + df['endTime'], format='%A %H:%M:%S')
+
+    df['full_period'] = (
+        (df['end_timestamp'] - df['start_timestamp']).dt.total_seconds() == 24 * 60 * 60
+    ) & (
+        df['start_timestamp'].dt.day_name() == df['end_timestamp'].dt.day_name()
+    )
+
+    completeness_series = df.groupby(['id', 'id_2'])['full_period'].all()
+    return completeness_series
+
+
+data_set_1 = "dataset-1.csv"
+data_set_2 = "dataset-1.csv"
+data_set_3 = "dataset-1.csv"
+data_set_4 = "dataset-1.csv"
+data_set_5 = "dataset-1.csv"
+data_set_6 = "dataset-2.csv"
+
+result_1 = generate_car_matrix(data_set_1)
+result_2 = get_type_count(data_set_2)
+result_3 = get_bus_indexes(data_set_3)
+result_4 = filter_routes(data_set_4)
+result_5 = multiply_matrix(data_set_5)
+result_6 = check_timestamp_completeness(data_set_6)
+
+print(result_1)
+print(result_2)
+print(result_3)
+print(result_4)
+print(result_5)
+print(result_6)
